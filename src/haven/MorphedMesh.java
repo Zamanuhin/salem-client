@@ -66,7 +66,7 @@ public class MorphedMesh extends FastMesh {
 	private int seq = 0;
 	
 	private MorphedBuf(VertexBuf buf, Pose pose) {
-	    super(buf, false, false, true);
+	    super(buf, false, false, true, true);
 	    this.poseref = new WeakReference<Pose>(pose);
 	    int[] xl = new int[bones.length];
 	    for(int i = 0; i < xl.length; i++)

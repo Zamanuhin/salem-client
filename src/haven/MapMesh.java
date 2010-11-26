@@ -34,17 +34,18 @@ public class MapMesh implements Rendered {
     public final Coord ul, sz;
     public final MCache map;
     private Map<Class<? extends Surface>, Surface> surfmap = new HashMap<Class<? extends Surface>, Surface>();
-    private Map<Tex, GLState> texmap = new HashMap<Tex, GLState>();
+    private static Map<Tex, GLState> texmap = new HashMap<Tex, GLState>();
     private List<Layer> layers;
 
     public static class SPoint {
 	public Coord3f pos, nrm = Coord3f.zu;
+	public Coord3f fog = null;
 	public SPoint(Coord3f pos) {
 	    this.pos = pos;
 	}
     }
     
-    public GLState stfor(Tex tex) {
+    public static GLState stfor(Tex tex) {
 	TexGL gt;
 	if(tex instanceof TexGL)
 	    gt = (TexGL)tex;
@@ -139,6 +140,14 @@ public class MapMesh implements Rendered {
 		v3.tex = new Coord3f(tex.tcx(r), tex.tcy(b), 0.0f);
 		v4.tex = new Coord3f(tex.tcx(r), tex.tcy(0), 0.0f);
 	    }
+	    if(vrt[0].fog != null)
+		v1.fog = vrt[0].fog;
+	    if(vrt[1].fog != null)
+		v2.fog = vrt[1].fog;
+	    if(vrt[2].fog != null)
+		v3.fog = vrt[2].fog;
+	    if(vrt[3].fog != null)
+		v4.fog = vrt[3].fog;
 	    buf.new Face(v1, v2, v3);
 	    buf.new Face(v1, v3, v4);
 	}
@@ -293,7 +302,6 @@ public class MapMesh implements Rendered {
     
     private void clean() {
 	surfmap = null;
-	texmap = null;
     }
     
     public void draw(GOut g) {

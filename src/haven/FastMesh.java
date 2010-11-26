@@ -79,10 +79,15 @@ public class FastMesh implements FRendered {
 	    gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);
 	    gl.glTexCoordPointer(2, GL.GL_FLOAT, 0, vert.texb);
 	}
+	if(vert.fogb != null) {
+	    gl.glEnableClientState(GL.GL_FOG_COORD_ARRAY);
+	    gl.glFogCoordPointer(GL.GL_FLOAT, 0, vert.fogb);
+	}
 	gl.glDrawElements(GL.GL_TRIANGLES, num * 3, GL.GL_UNSIGNED_SHORT, indb);
 	gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
 	gl.glDisableClientState(GL.GL_NORMAL_ARRAY);
 	gl.glDisableClientState(GL.GL_TEXTURE_COORD_ARRAY);
+	gl.glDisableClientState(GL.GL_FOG_COORD_ARRAY);
     }
     
     public void draw(GOut g) {

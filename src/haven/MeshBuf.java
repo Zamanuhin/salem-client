@@ -33,18 +33,23 @@ public class MeshBuf {
     public final Collection<Face> f = new LinkedList<Face>();
     
     public class Vertex {
-	public Coord3f pos, nrm, tex;
+	public Coord3f pos, nrm, tex, fog;
 	private short idx;
 	
-	public Vertex(Coord3f pos, Coord3f nrm, Coord3f tex) {
+	public Vertex(Coord3f pos, Coord3f nrm, Coord3f tex, Coord3f fog) {
 	    this.pos = pos;
 	    this.nrm = nrm;
 	    this.tex = tex;
+	    this.fog = fog;
 	    v.add(this);
 	}
 	
+	public Vertex(Coord3f pos, Coord3f nrm, Coord3f tex) {
+	    this(pos, nrm, tex, null);
+	}
+	
 	public Vertex(Coord3f pos, Coord3f nrm) {
-	    this(pos, nrm, null);
+	    this(pos, nrm, null, null);
 	}
     }
     
@@ -60,12 +65,13 @@ public class MeshBuf {
     public FastMesh mkmesh() {
 	if(v.isEmpty() || f.isEmpty())
 	    throw(new RuntimeException("Tried to build empty mesh"));
-	float[] pos, nrm, tex;
-	boolean hastex = false;
+	float[] pos, nrm, tex, fog;
+	boolean hastex = false, hasfog = false;
 	pos = new float[v.size() * 3];
 	nrm = new float[v.size() * 3];
 	tex = new float[v.size() * 2];
-	int pi = 0, ni = 0, ti = 0;
+	fog = new float[v.size()];
+	int pi = 0, ni = 0, ti = 0, fi = 0;
 	short i = 0;
 	for(Vertex v : this.v) {
 	    pos[pi + 0] = v.pos.x;
@@ -79,14 +85,21 @@ public class MeshBuf {
 		tex[ti + 0] = v.tex.x;
 		tex[ti + 1] = v.tex.y;
 	    }
+	    if(v.fog != null) {
+		hasfog = true;
+		fog[fi] = v.fog.x;
+	    }
 	    pi += 3;
 	    ni += 3;
 	    ti += 2;
+	    fi++;
 	    v.idx = i++;
 	}
 	if(!hastex)
 	    tex = null;
-	VertexBuf vbuf = new VertexBuf(pos, nrm, tex);
+	if(!hasfog)
+	    fog = null;
+	VertexBuf vbuf = new VertexBuf(pos, nrm, tex, fog);
 	short[] idx = new short[f.size() * 3];
 	int ii = 0;
 	for(Face f : this.f) {

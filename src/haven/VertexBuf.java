@@ -30,7 +30,7 @@ import java.nio.*;
 import java.util.*;
 
 public class VertexBuf {
-    public final FloatBuffer posb, nrmb, texb;
+    public final FloatBuffer posb, nrmb, texb, fogb;
     public final int num;
     public VertexBuf from = null;
     public int apv = 0;
@@ -38,22 +38,29 @@ public class VertexBuf {
     public float[] assweights;
     public String[] bones;
     
-    public VertexBuf(float[] pos, float[] nrm, float[] tex) {
+    public VertexBuf(float[] pos, float[] nrm, float[] tex, float[] fog) {
 	if((pos == null) || (nrm == null))
 	    throw(new RuntimeException("VertexBuf needs at least positions and normals"));
 	num = pos.length / 3;
 	if(pos.length != num * 3)
 	    throw(new RuntimeException("Invalid position array length"));
 	if(nrm.length != num * 3)
-	    throw(new RuntimeException("Invalid position array length"));
+	    throw(new RuntimeException("Invalid normal array length"));
 	posb = Utils.bufcp(pos);
 	nrmb = Utils.bufcp(nrm);
 	if(tex != null) {
 	    if(tex.length != num * 2)
-		throw(new RuntimeException("Invalid position array length"));
+		throw(new RuntimeException("Invalid tex array length"));
 	    texb = Utils.bufcp(tex);
 	} else {
 	    texb = null;
+	}
+	if(fog != null) {
+	    if(fog.length != num)
+		throw(new RuntimeException("Invalid fog array length"));
+	    fogb = Utils.bufcp(fog);
+	} else {
+	    fogb = null;
 	}
     }
     
@@ -67,7 +74,7 @@ public class VertexBuf {
 	return(ret);
     }
 
-    public VertexBuf(VertexBuf from, boolean posk, boolean nrmk, boolean texk) {
+    public VertexBuf(VertexBuf from, boolean posk, boolean nrmk, boolean texk, boolean fogk) {
 	this.from = from;
 	if(posk)
 	    this.posb = from.posb;
@@ -81,6 +88,10 @@ public class VertexBuf {
 	    this.texb = from.texb;
 	else
 	    this.texb = bufdup(from.texb);
+	if(!fogk)
+	    this.fogb = from.fogb;
+	else
+	    this.fogb = bufdup(from.fogb);
 	this.num = from.num;
 	this.apv = from.apv;
 	this.assbones = from.assbones;
@@ -162,7 +173,7 @@ public class VertexBuf {
 		    bn = bones.toArray(new String[0]);
 		}
 	    }
-	    this.b = new VertexBuf(pos, nrm, tex);
+	    this.b = new VertexBuf(pos, nrm, tex, null);
 	    if(ba != null) {
 		this.b.apv = mba;
 		this.b.assbones = ba;

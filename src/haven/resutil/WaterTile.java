@@ -72,6 +72,7 @@ public class WaterTile extends Tiler {
 		    if(d[i - 1] < td)
 			td = d[i - 1];
 		    spoint(c).pos.z -= td;
+		    spoint(c).fog = new Coord3f(td, 0, 0);
 		    if(td == 0)
 			s[idx(c)] = true;
 		    i++;
@@ -143,6 +144,23 @@ public class WaterTile extends Tiler {
     static {
 	surf2.tex = srf;
     }
+    static float[] col = {0, 0, 0, 1};
+    public static final GLState fog = new GLState.StandAlone(PView.proj) {
+	    public void apply(GOut g) {
+		GL gl = g.gl;
+		gl.glFogi(GL.GL_FOG_MODE, GL.GL_LINEAR);
+		gl.glFogi(GL.GL_FOG_COORD_SRC, GL.GL_FOG_COORD);
+		gl.glFogf(GL.GL_FOG_START, 0.0f);
+		gl.glFogf(GL.GL_FOG_END, 45.0f);
+		gl.glFogfv(GL.GL_FOG_COLOR, col, 0);
+		gl.glEnable(GL.GL_FOG);
+	    }
+	    
+	    public void unapply(GOut g) {
+		GL gl = g.gl;
+		gl.glDisable(GL.GL_FOG);
+	    }
+	};
 
     public static class Shallows extends WaterTile {
 	public Shallows(int id, Resource.Tileset set) {
@@ -162,9 +180,16 @@ public class WaterTile extends Tiler {
 	this.depth = depth;
     }
     
+    private static Map<GLState, GLState> bs = new HashMap<GLState, GLState>();
     public void lay(MapMesh m, Random rnd, Coord lc, Coord gc) {
 	Tile g = set.ground.pick(rnd);
-	m.new Plane(m.surf(Bottom.class), lc, 0, g);
+	GLState gs = MapMesh.stfor(g.tex());
+	GLState cbs = bs.get(gs);
+	if(cbs == null) {
+	    cbs = GLState.compose(gs, fog);
+	    bs.put(gs, cbs);
+	}
+	(m.new Plane(m.surf(Bottom.class), lc, 0, cbs)).tex = g.tex();
 	m.new Plane(m.gnd(), lc, 256, surf2);
 	m.new Plane(m.gnd(), lc, 257, surfmat);
     }
