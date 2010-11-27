@@ -106,7 +106,7 @@ public class WaterTile extends Tiler {
 		gl.glEnable(GL.GL_TEXTURE_GEN_R);
 		gl.glEnable(GL.GL_TEXTURE_CUBE_MAP);
 		gl.glBindTexture(GL.GL_TEXTURE_CUBE_MAP, sky.glid(g));
-		gl.glColor4f(1, 1, 1, 0.25f);
+		gl.glColor4f(1, 1, 1, 0.5f);
 		g.st.matmode(GL.GL_TEXTURE);
 		gl.glPushMatrix();
 		g.st.cur(PView.cam).tm.transpose().trim3(1).loadgl(gl);
@@ -190,7 +190,7 @@ public class WaterTile extends Tiler {
 	    bs.put(gs, cbs);
 	}
 	(m.new Plane(m.surf(Bottom.class), lc, 0, cbs)).tex = g.tex();
-	m.new Plane(m.gnd(), lc, 256, surf2);
+	//m.new Plane(m.gnd(), lc, 256, surf2);
 	m.new Plane(m.gnd(), lc, 257, surfmat);
     }
     

@@ -40,6 +40,7 @@ public abstract class PView extends Widget {
     public class RenderState extends GLState {
 	public final float field = 0.5f;
 	public final float aspect = ((float)sz.y) / ((float)sz.x);
+	public final Matrix4f projmat = new Matrix4f();
 	
 	public void apply(GOut g) {
 	    GL gl = g.gl;
@@ -58,6 +59,7 @@ public abstract class PView extends Widget {
 	    gl.glPushMatrix();
 	    gl.glLoadIdentity();
 	    gl.glFrustum(-field, field, -aspect * field, aspect * field, 1, 5000);
+	    projmat.getgl(gl, GL.GL_PROJECTION_MATRIX);
 
 	    g.st.matmode(gl.GL_MODELVIEW);
 	    gl.glPushMatrix();
@@ -84,6 +86,14 @@ public abstract class PView extends Widget {
 	
 	public void prep(Buffer b) {
 	    b.put(proj, this);
+	}
+	
+	public Coord3f toscreen(Coord3f ec, Coord sz) {
+	    float[] o = projmat.mul4(ec.to4a(1));
+	    o[0] /= o[3]; o[1] /= o[3];
+	    o[0] = ((o[0] + 1) / 2) * sz.x;
+	    o[1] = ((-o[1] + 1) / 2) * sz.y;
+	    return(new Coord3f(o[0], o[1], o[2]));
 	}
     }
     

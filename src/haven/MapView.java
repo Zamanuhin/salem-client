@@ -183,15 +183,25 @@ public class MapView extends PView {
 		return(null);
 	    }
 	};
+    
     private final Rendered gobs = new Rendered() {
 	    public void draw(GOut g) {}
 	    
 	    public Order setup(RenderList rl) {
 		synchronized(glob.oc) {
-		    for(Gob g : glob.oc) {
-			Coord3f c = g.getc();
+		    for(final Gob gob : glob.oc) {
+			Coord3f c = gob.getc();
 			c.y = -c.y;
-			rl.add(g, GLState.compose(Location.xlate(c), Location.rot(Coord3f.zu, (float)-g.a)));
+			Location save = new Location() {
+				public void xf(GOut g) {
+				    Matrix4f tm = Matrix4f.fromgl(g.gl, GL.GL_MODELVIEW_MATRIX);
+				    PView.RenderState proj = g.st.cur(PView.proj);
+				    Coord3f s = proj.toscreen(tm.mul4(Coord3f.o), sz);
+				    gob.sc = new Coord(s);
+				    gob.sczu = proj.toscreen(tm.mul4(Coord3f.zu), sz).sub(s);
+				}
+			    };
+			rl.add(gob, GLState.compose(Location.xlate(c), Location.rot(Coord3f.zu, (float)-gob.a), save));
 		    }
 		}
 		return(null);
@@ -227,48 +237,50 @@ public class MapView extends PView {
 	    return(new Coord3f(cc.x, cc.y, glob.map.getcz(cc)));
     }
 
-    private static class Clicklist extends RenderList {
-	private Map<Color, Rendered> rmap = new HashMap<Color, Rendered>();
+    private abstract static class Clicklist<T> extends RenderList {
+	private Map<Color, T> rmap = new HashMap<Color, T>();
 	private int i = 1;
 	private GLState.Buffer plain;
+	
+	abstract protected T map(Rendered r);
 	
 	private Clicklist(GLState.Buffer plain) {
 	    this.plain = plain;
 	}
 	
-	protected void newcol(GOut g, Rendered r) {
-	    GL gl = g.gl;
+	protected Color newcol(T t) {
 	    int cr = i & 0xff,
 		cg = (i & 0xff00) >> 8,
 		cb = (i & 0xff0000) >> 16;
 	    Color col = new Color(cr, cg, cb);
 	    i++;
-	    rmap.put(col, r);
-	    States.ColState st = new States.ColState(col);
-	    g.state(st);
+	    rmap.put(col, t);
+	    return(col);
 	}
 
 	protected void render(GOut g, Rendered r) {
-	    if(r instanceof FRendered) {
-		newcol(g, r);
+	    if(r instanceof FRendered)
 		((FRendered)r).drawflat(g);
-	    }
 	}
 	
-	public Rendered get(GOut g, Coord c) {
+	public T get(GOut g, Coord c) {
 	    return(rmap.get(g.getpixel(c)));
 	}
 	
 	protected void setup(Slot s, Rendered r) {
+	    T t = map(r);
 	    Location loc = s.os.get(PView.loc);
 	    plain.copy(s.os);
 	    s.os.put(PView.loc, loc);
-	    //System.err.println(r + ": " + s.os);
+	    if(t != null) {
+		Color col = newcol(t);
+		new States.ColState(col).prep(s.os);
+	    }
 	    super.setup(s, r);
 	}
     }
     
-    private static class Maplist extends Clicklist {
+    private static class Maplist extends Clicklist<MapMesh> {
 	private int mode = 0;
 	private MapMesh limit = null;
 	
@@ -276,11 +288,17 @@ public class MapView extends PView {
 	    super(plain);
 	}
 	
+	protected MapMesh map(Rendered r) {
+	    if(r instanceof MapMesh)
+		return((MapMesh)r);
+	    return(null);
+	}
+	
 	protected void render(GOut g, Rendered r) {
 	    if(r instanceof MapMesh) {
 		MapMesh m = (MapMesh)r;
-		if(mode == 0)
-		    newcol(g, m);
+		if(mode != 0)
+		    g.st.put(States.color, null);
 		if((limit == null) || (limit == m))
 		    m.drawflat(g, mode);
 	    }
@@ -292,8 +310,8 @@ public class MapView extends PView {
 	rl.setup(map, basic(g));
 	{
 	    rl.render(g);
-	    Rendered hit = rl.get(g, c);
-	    if((hit == null) || !(hit instanceof MapMesh))
+	    MapMesh hit = rl.get(g, c);
+	    if(hit == null)
 		return(null);
 	    rl.limit = (MapMesh)hit;
 	}
@@ -319,22 +337,21 @@ public class MapView extends PView {
     }
     
     private Gob checkgobclick(GOut g, Coord c) {
-	final Map<Rendered, Gob> gobmap = new IdentityHashMap<Rendered, Gob>();
-	Clicklist rl = new Clicklist(basic(g)) {
+	Clicklist<Gob> rl = new Clicklist<Gob>(basic(g)) {
 		Gob cur;
+		public Gob map(Rendered r) {
+		    return(cur);
+		}
+		
 		public void add(Rendered r, GLState t) {
 		    if(r instanceof Gob)
 			cur = (Gob)r;
-		    gobmap.put(r, cur);
 		    super.add(r, t);
 		}
 	    };
 	rl.setup(gobs, basic(g));
 	rl.render(g);
-	Rendered hr = rl.get(g, c);
-	if(hr == null)
-	    return(null);
-	return(gobmap.get(hr));
+	return(rl.get(g, c));
     }
 
     private void checkclick(GOut g, Coord clickc) {
@@ -381,6 +398,13 @@ public class MapView extends PView {
 	    g.frect(Coord.z, sz);
 	    g.chcolor(Color.WHITE);
 	    g.atext(text, sz.div(2), 0.5, 0.5);
+	}
+	synchronized(glob.oc) {
+	    for(Gob gob : glob.oc) {
+		Speaking sp = gob.getattr(Speaking.class);
+		if((sp != null) && (gob.sc != null))
+		    sp.draw(g, gob.sc.add(new Coord(gob.sczu.mul(sp.zo))));
+	    }
 	}
     }
     
