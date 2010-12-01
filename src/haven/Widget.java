@@ -50,7 +50,7 @@ public class Widget {
 			       MenuGrid.class, SlenHud.class, HWindow.class, CheckBox.class, Logwindow.class,
 			       ISBox.class, ComMeter.class, Fightview.class, IMeter.class,
 			       GiveButton.class, Charlist.class, ComWin.class, BuddyWnd.class,
-			       ChatHW.class, Speedget.class, Bufflist.class};
+			       ChatHW.class, Speedget.class, Bufflist.class, GameUI.class};
 	
     static {
 	addtype("cnt", new WidgetFactory() {
@@ -75,12 +75,37 @@ public class Widget {
 	}
     }
 	
-    public static WidgetFactory gettype(String name) {
-	synchronized(types) {
-	    return(types.get(name));
+    public static WidgetFactory gettype2(String name) throws InterruptedException {
+	if(name.indexOf('/') < 0) {
+	    synchronized(types) {
+		return(types.get(name));
+	    }
+	} else {
+	    int ver = -1, p;
+	    if((p = name.indexOf(':')) > 0) {
+		ver = Integer.parseInt(name.substring(p + 1));
+		name = name.substring(0, p);
+	    }
+	    Resource res = Resource.load(name, ver);
+	    res.loadwaitint();
+	    return(res.layer(Resource.CodeEntry.class).get(WidgetFactory.class));
 	}
     }
-	
+    
+    public static WidgetFactory gettype(String name) {
+	WidgetFactory f;
+	try {
+	    f = gettype2(name);
+	} catch(InterruptedException e) {
+	    /* XXX: This is not proper behavior. On the other hand,
+	     * InterruptedException should not be checked. :-/ */
+	    throw(new RuntimeException("Interrupted while loading resource widget", e));
+	}
+	if(f == null)
+	    throw(new RuntimeException("No such widget type: " + name));
+	return(f);
+    }
+    
     public Widget(UI ui, Coord c, Coord sz) {
 	this.ui = ui;
 	this.c = c;
@@ -96,6 +121,11 @@ public class Widget {
 	    link();
 	}
     }
+    
+    public Widget makechild(String type, Object[] pargs, Object[] cargs) {
+	Coord c = (Coord)pargs[0];
+	return(gettype(type).create(c, this, cargs));
+    }
 	
     public void link() {
 	synchronized(ui) {
@@ -105,6 +135,17 @@ public class Widget {
 		parent.child = this;
 	    this.prev = parent.lchild;
 	    parent.lchild = this;
+	}
+    }
+    
+    public void linkfirst() {
+	synchronized(ui) {
+	    if(parent.child != null)
+		parent.child.prev = this;
+	    if(parent.lchild == null)
+		parent.lchild = this;
+	    this.next = parent.child;
+	    parent.child = this;
 	}
     }
 	
@@ -426,11 +467,27 @@ public class Widget {
 	}
 	return(false);
     }
+    
+    public void resize(Coord sz) {
+	this.sz = sz;
+	for(Widget ch = child; ch != null; ch = ch.next)
+	    ch.presize();
+    }
+    
+    public void presize() {
+    }
 	
     public void raise() {
 	synchronized(ui) {
 	    unlink();
 	    link();
+	}
+    }
+    
+    public void lower() {
+	synchronized(ui) {
+	    unlink();
+	    linkfirst();
 	}
     }
     

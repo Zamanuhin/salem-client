@@ -142,27 +142,12 @@ public class UI {
 	afterdraws = null;
     }
 	
-    public void newwidget(int id, String type, Coord c, int parent, Object... args) throws InterruptedException {
-	WidgetFactory f;
-	if(type.indexOf('/') >= 0) {
-	    int ver = -1, p;
-	    if((p = type.indexOf(':')) > 0) {
-		ver = Integer.parseInt(type.substring(p + 1));
-		type = type.substring(0, p);
-	    }
-	    Resource res = Resource.load(type, ver);
-	    res.loadwaitint();
-	    f = res.layer(Resource.CodeEntry.class).get(WidgetFactory.class);
-	} else {
-	    f = Widget.gettype(type);
-	}
-	if(f == null)
-	    throw(new RuntimeException("No such widget widget type: " + type));
+    public void newwidget(int id, String type, int parent, Object[] pargs, Object... cargs) throws InterruptedException {
 	synchronized(this) {
 	    Widget pwdg = widgets.get(parent);
 	    if(pwdg == null)
-		throw(new UIException("Null parent widget " + parent + " for " + id, type, args));
-	    Widget wdg = f.create(c, pwdg, args);
+		throw(new UIException("Null parent widget " + parent + " for " + id, type, cargs));
+	    Widget wdg = pwdg.makechild(type.intern(), pargs, cargs);
 	    bind(wdg, id);
 	    if(wdg instanceof MapView)
 		mainview = (MapView)wdg;

@@ -138,6 +138,8 @@ public class HavenPanel extends GLCanvas implements Runnable {
 				buf.put(proj2d, this);
 			    }
 			};
+		    HavenPanel.this.w = w;
+		    HavenPanel.this.h = h;
 		}
 		
 		public void displayChanged(GLAutoDrawable d, boolean cp1, boolean cp2) {}
@@ -146,7 +148,7 @@ public class HavenPanel extends GLCanvas implements Runnable {
 	
     public void init() {
 	setFocusTraversalKeysEnabled(false);
-	ui = new UI(new Coord(w, h), null);
+	newui(null);
 	addKeyListener(new KeyAdapter() {
 		public void keyTyped(KeyEvent e) {
 		    checkfs();
@@ -261,6 +263,8 @@ public class HavenPanel extends GLCanvas implements Runnable {
 	ui = new UI(new Coord(w, h), sess);
 	ui.root.gprof = prof;
 	ui.fsm = this.fsm;
+	if(getParent() instanceof Console.Directory)
+	    ui.cons.add((Console.Directory)getParent());
 	return(ui);
     }
 	
@@ -279,7 +283,7 @@ public class HavenPanel extends GLCanvas implements Runnable {
 	GLState.Buffer ibuf = new GLState.Buffer();
 	gstate.prep(ibuf);
 	ostate.prep(ibuf);
-	GOut g = new GOut(gl, getContext(), state, ibuf, new Coord(800, 600));
+	GOut g = new GOut(gl, getContext(), state, ibuf, new Coord(w, h));
 	state.set(ibuf);
 
 	g.state(rtstate);
@@ -414,6 +418,8 @@ public class HavenPanel extends GLCanvas implements Runnable {
 		    if(ui.sess != null)
 			ui.sess.glob.oc.ctick();
 		    dispatch();
+		    if((ui.root.sz.x != w) || (ui.root.sz.y != h))
+			ui.root.resize(new Coord(w, h));
 		}
 		if(curf != null)
 		    curf.tick("dsp");

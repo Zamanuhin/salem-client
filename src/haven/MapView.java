@@ -53,19 +53,27 @@ public class MapView extends PView {
 	public boolean wheel(Coord sc, int amount) {
 	    return(false);
 	}
+	
+	public void resized() {
+	}
     }
     
     private class FollowCam extends Camera {
-	private final float ca = (float)sz.y / (float)sz.x;
-	private final float h = 10.0f, cd = 400.0f * ca;
-	private final float da = (float)Math.atan(ca * 0.5f);
-	private final float fr = 0.0f;
+	private final float fr = 0.0f, h = 10.0f;
+	private float ca, cd, da;
 	private Coord3f curc = null;
 	private float elev = (float)Math.PI / 4.0f;
 	private float angl = 0.0f;
 	private Coord dragorig = null;
 	private float anglorig;
-
+	
+	public void resized() {
+	    ca = (float)sz.y / (float)sz.x;
+	    cd = 400.0f * ca;
+	    da = (float)Math.atan(ca * 0.5f);
+	}
+	{resized();}
+	
 	public boolean click(Coord c) {
 	    anglorig = angl;
 	    dragorig = c;
@@ -249,9 +257,9 @@ public class MapView extends PView {
 	}
 	
 	protected Color newcol(T t) {
-	    int cr = i & 0xff,
-		cg = (i & 0xff00) >> 8,
-		cb = (i & 0xff0000) >> 16;
+	    int cr = ((i & 0x00000f) << 4) | ((i & 0x00f000) >> 12),
+		cg = ((i & 0x0000f0) << 0) | ((i & 0x0f0000) >> 16),
+		cb = ((i & 0x000f00) >> 4) | ((i & 0xf00000) >> 20);
 	    Color col = new Color(cr, cg, cb);
 	    i++;
 	    rmap.put(col, t);
@@ -408,6 +416,11 @@ public class MapView extends PView {
 	}
     }
     
+    public void resize(Coord sz) {
+	super.resize(sz);
+	camera.resized();
+    }
+
     private boolean camdrag = false;
     
     public boolean mousedown(Coord c, int button) {

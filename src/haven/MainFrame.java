@@ -31,7 +31,7 @@ import java.awt.event.*;
 import java.io.*;
 import java.util.*;
 
-public class MainFrame extends Frame implements Runnable, FSMan {
+public class MainFrame extends Frame implements Runnable, FSMan, Console.Directory {
     HavenPanel p;
     ThreadGroup g;
     DisplayMode fsmode = null, prefs = null;
@@ -103,6 +103,27 @@ public class MainFrame extends Frame implements Runnable, FSMan {
 	    setwnd();
     }
 
+    private Map<String, Console.Command> cmdmap = new TreeMap<String, Console.Command>();
+    {
+	cmdmap.put("sz", new Console.Command() {
+		public void run(Console cons, String[] args) {
+		    if(args.length == 3) {
+			p.setSize(Integer.parseInt(args[1]), Integer.parseInt(args[2]));
+			pack();
+		    } else if(args.length == 2) {
+			if(args[1].equals("dyn")) {
+			    setResizable(true);
+			} else if(args[1].equals("lock")) {
+			    setResizable(false);
+			}
+		    }
+		}
+	    });
+    }
+    public Map<String, Console.Command> findcmds() {
+	return(cmdmap);
+    }
+
     private void seticon() {
 	Image icon;
 	try {
@@ -121,7 +142,7 @@ public class MainFrame extends Frame implements Runnable, FSMan {
 	fsmode = findmode(w, h);
 	add(p);
 	pack();
-	setResizable(false);
+	setResizable(!Config.wndlock);
 	p.requestFocus();
 	seticon();
 	setVisible(true);
@@ -208,7 +229,7 @@ public class MainFrame extends Frame implements Runnable, FSMan {
 	Config.cmdline(args);
 	ThreadGroup g = HackThread.tg();
 	setupres();
-	MainFrame f = new MainFrame(800, 600);
+	MainFrame f = new MainFrame(Config.wndsz.x, Config.wndsz.y);
 	if(Config.fullscreen)
 	    f.setfs();
 	f.g = g;
