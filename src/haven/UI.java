@@ -136,7 +136,7 @@ public class UI {
     }
 
     public void draw(GOut g) {
-	root.draw(g);
+	root.drawwrap(g);
 	synchronized(afterdraws) {
 	    for(AfterDraw ad : afterdraws)
 		ad.draw(g);

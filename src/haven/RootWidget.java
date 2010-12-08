@@ -48,6 +48,8 @@ public class RootWidget extends ConsoleHost {
 		GameUI gi = findchild(GameUI.class);
 		if((gi != null) && (gi.map != null))
 		    new Profwnd(new Coord(100, 100), this, gi.map.prof, "MV prof");
+	    } else if(key == '!') {
+		printprof(System.err, 0);
 	    } else if(key == ':') {
 		entercmd();
 	    } else if(key != 0) {

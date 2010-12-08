@@ -452,6 +452,23 @@ public class Widget {
 	}
     }
 
+    public long drawacc = 0, lastp = System.nanoTime();
+    public void drawwrap(GOut g) {
+	long s = System.nanoTime();
+	draw(g);
+	drawacc += System.nanoTime() - s;
+    }
+    public void printprof(java.io.PrintStream out, int indent) {
+	long now = System.nanoTime();
+	for(int i = 0; i < indent; i++)
+	    out.print('\t');
+	out.println(this.toString() + ": " + (drawacc / 1000000000.0) + "/" + ((now - lastp) / 1000000000.0));
+	lastp = now;
+	drawacc = 0;
+	for(Widget wdg = child; wdg != null; wdg = wdg.next)
+	    wdg.printprof(out, indent + 1);
+    }
+
     public void draw(GOut g, boolean strict) {
 	Widget next;
 		
@@ -465,7 +482,7 @@ public class Widget {
 		g2 = g.reclip(cc, wdg.sz);
 	    else
 		g2 = g.reclipl(cc, wdg.sz);
-	    wdg.draw(g2);
+	    wdg.drawwrap(g2);
 	}
     }
     
